@@ -20,6 +20,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define TENSORRTAPI
+
 #ifndef NV_ONNX_PARSER_H
 #define NV_ONNX_PARSER_H
 

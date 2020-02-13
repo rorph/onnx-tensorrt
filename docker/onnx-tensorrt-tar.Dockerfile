@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+FROM nvcr.io/nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
 ARG TENSORRT_VERSION=6.0.1.5
 ARG PY3_VERSION=36
 
@@ -24,19 +24,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         protobuf-compiler \
         cmake \
         swig \
+        rsync \
     && rm -rf /var/lib/apt/lists/*
 
+RUN cd /opt && wget http://www.cmake.org/files/v3.13/cmake-3.13.5.tar.gz && tar -xvzf cmake-3.13.5.tar.gz && cd cmake-3.13.5/ && ./configure && make -j32 && make install && update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 --force
+RUN rm -f /opt/cmake-3.13.5.tar.gz
 
 WORKDIR /opt/onnx-tensorrt
 COPY . .
 
 # Install TensorRT
+# cp lib/lib* /usr/lib/x86_64-linux-gnu/ &&
+# rm /usr/lib/x86_64-linux-gnu/libnv*.a &&
 RUN tar -xvf TensorRT-${TENSORRT_VERSION}.*.tar.gz && \
     cd TensorRT-${TENSORRT_VERSION}/ && \
-    cp lib/lib* /usr/lib/x86_64-linux-gnu/ && \
-    rm /usr/lib/x86_64-linux-gnu/libnv*.a && \
-    cp include/* /usr/include/x86_64-linux-gnu/ && \
-    cp bin/* /usr/bin/ && \
+    rsync -a lib/ /usr/lib/x86_64-linux-gnu/ && \
+    rsync -a include/ /usr/include/x86_64-linux-gnu/ && \
+    rsync -a bin/ /usr/bin/ && \
     mkdir /usr/share/doc/tensorrt && \
     cp -r doc/* /usr/share/doc/tensorrt/ && \
     mkdir /usr/src/tensorrt && \
@@ -57,7 +61,8 @@ ENV ONNX2TRT_VERSION 0.1.0
 
 WORKDIR /opt/onnx-tensorrt
 
-RUN rm -rf build/ && \
+RUN ldconfig -v && \
+    rm -rf build/ && \
     mkdir -p build && \
     cd build && \
     cmake -DCUDA_INCLUDE_DIRS=/usr/local/cuda/include/ .. && \
